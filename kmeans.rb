@@ -38,15 +38,17 @@ end
 
 @means = Array.new
 
-@first_mean = [0, 0, 0]
-
-@num_means = 2
+@num_means = 3
 
 p @r_max
 p @g_max
 p @b_max
 
 # Calculate the initial set of centroids
+
+'
+Use a set of equally spaced centroids
+Does not work so well
 
 r_diff = @r_max / @num_means
 g_diff = @g_max / @num_means
@@ -57,11 +59,15 @@ b_diff = @b_max / @num_means
 (1..@num_means-1).to_a.each do |i|
 	@means.push([@means[i-1][0] + r_diff, @means[i-1][1] + g_diff, @means[i-1][2] + b_diff])
 end
+'
 
-@means = [[60, 60, 60], [75, 75, 120]]
+'
+Use a random set of initial centroids
+'
 
-@means = [[rand(256), rand(256), rand(256)], [rand(256),rand(256) , rand(256)]]
-# p @means
+(1..@num_means).to_a.each do |ind|
+	@means.push([rand(256), rand(256), rand(256)])
+end
 
 @clustered = Hash.new
 
@@ -73,7 +79,7 @@ end
 
 # Define number of iterations
 
-num_iteration = 20
+num_iteration = 100
 
 # Start iterations loop
 
@@ -114,7 +120,7 @@ num_iteration = 20
 			green.push(item[1])
 			blue.push(item[2])
 		end
-		
+
 		# if red.count == 0 or green.count == 0 or blue.count == 0
 		#	next
 		# end
@@ -127,13 +133,6 @@ num_iteration = 20
 	p @old_means
 	p "New means"
 	p @means
-	'''
-	if @old_means == @means
-		break
-	end
-
-	@old_means = @means
-	'''
 
 	@clustered.each_with_index do |item, index|
 		p index.to_s + " : " + @clustered[index].count.to_s
@@ -143,8 +142,6 @@ end
 @red_all = Array.new
 @green_all = Array.new
 @blue_all = Array.new
-
-# p @clustered
 
 @clustered.each_with_index do |cluster, ind|
 	red = Array.new
@@ -169,10 +166,16 @@ end
 	@blue_all.push(blue)
 end
 
-# p "red"
-# p @red_all
+@plot_datasets = Array.new
 
-Gnuplot.open do |gp|
+@red_all.each_with_index do |item, index|
+	@plot_datasets.push(Gnuplot::DataSet.new( [@red_all[index], @green_all[index], @blue_all[index]]) { |ds|
+		ds.with = "points"
+		ds.title = "Cluster " + index.to_s
+	})
+end
+
+File.open("array_plot.dat", "w") do |gp|
 	Gnuplot::SPlot.new( gp ) do |plot|
 
 		plot.title  "Array Plot Example"
@@ -180,16 +183,6 @@ Gnuplot.open do |gp|
 		plot.ylabel "green"
 		plot.zlabel "blue"
 
-		plot.data = [
-			Gnuplot::DataSet.new( [@red_all[0], @green_all[0], @blue_all[0]] ) { |ds|
-				ds.with = "points"
-				ds.notitle
-			},
-
-			Gnuplot::DataSet.new( [@red_all[1], @green_all[1], @blue_all[1]] ) { |ds|
-				ds.with = "points"
-				ds.notitle
-			}
-		]
+		plot.data = @plot_datasets
 	end
 end
